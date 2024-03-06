@@ -16,7 +16,10 @@ const db = new sqlite3.Database("example.db");
 // Membuat tabel user
 // db.serialize(function () {
 //   db.run(
-//     "CREATE TABLE user (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, email TEXT)"
+//     `CREATE TABLE user (
+//       id INTEGER PRIMARY KEY AUTOINCREMENT,
+//       username TEXT,
+//       email TEXT)`
 //   );
 // });
 
@@ -27,6 +30,25 @@ app.get("/users", (req, res) => {
       return res.status(500).json({ error: err.message });
     }
     res.json(rows);
+  });
+});
+
+// Endpoint untuk menampilkan user dengan id tertentu
+app.get("/users/:id", (req, res) => {
+  const userId = req.params.id;
+
+  db.get("SELECT * FROM user WHERE id = ?", userId, (err, row) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    if (row) {
+      res.json(row);
+    } else {
+      res.status(404).json({
+        status: 404,
+        message: `User with ID ${userId} not found`,
+      });
+    }
   });
 });
 
@@ -66,6 +88,16 @@ app.post("/users", (req, res) => {
   res.json({ status: 200, message: "User has been inserted" });
 });
 
+// Endpoint untuk memvalidasi route post
+app.post("/users/:id", (req, res) => {
+  const userId = req.params.id;
+
+  res.json({
+    status: 400,
+    message: `Can't use post method with url /users/${userId}`,
+  });
+});
+
 // Endpoint untuk mengupdate user berdasarkan ID
 app.put("/users/:id", (req, res) => {
   const userId = req.params.id;
@@ -91,15 +123,33 @@ app.put("/users/:id", (req, res) => {
   );
 });
 
+// Endpoint untuk memvalidasi route put
+app.put("/users/", (req, res) => {
+  res.json({
+    status: 400,
+    message: `Can't use post method with url /users/`,
+  });
+});
+
 // Endpoint untuk menghapus user berdasarkan ID
 app.delete("/users/:id", (req, res) => {
   const userId = req.params.id;
 
-  db.run("DELETE FROM user WHERE id = ?", userId, function (err) {
+  db.run("DELETE FROM user WHERE id = ?", userId, function (err, row) {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
-    res.json({ message: `User with ID ${userId} has been deleted` });
+    if (row) {
+      res.json({
+        status: 200,
+        message: `User with ID ${userId} has been deleted`,
+      });
+    } else {
+      res.status(404).json({
+        status: 404,
+        message: `User with ID ${userId} not found`,
+      });
+    }
   });
 });
 
